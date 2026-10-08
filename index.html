@@ -1,0 +1,153 @@
+<title>Emoji 複製盤</title>
+<meta name="description" content="全 emoji 點擊即複製，最近 20 個存本機">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>😀</text></svg>">
+<style>
+  /* 版面：左上角 ❓ 浮動 / 頂部最近條 + 分類 emoji 列（無框透明）/ 滿版 emoji 牆。
+     ⚠️ 色為暫定中性值：rec-kit/design-modules 通用色卡本機不在，待同步後對齊系統色/主題色。*/
+  :root{
+    --bg:#f7f6f4; --fg:#222019; --dim:#8a857d;        /* 中性 */
+    --state:#3f6fd1;                                   /* 系統色（狀態：選中/可按）暫定 */
+    --field:rgba(0,0,0,.05); --glass:rgba(247,246,244,.5);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#15140f; --fg:#eceae3; --dim:#8f8a80;
+    --state:#6f9bf0; --field:rgba(255,255,255,.07); --glass:rgba(21,20,15,.5);
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#15140f; --fg:#eceae3; --dim:#8f8a80;
+    --state:#6f9bf0; --field:rgba(255,255,255,.07); --glass:rgba(21,20,15,.5);
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  button,input,select,textarea{border:0;font:inherit;color:inherit;background:transparent}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font-family:"Hiragino Sans","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+    display:flex;flex-direction:column;min-height:100%;padding:4px}
+  .emo{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+
+  /* 左上角全局 ❓：前置浮動、自帶毛玻璃底色框 */
+  #help{position:fixed;top:calc(4px + env(safe-area-inset-top,0px));left:4px;z-index:9;
+    width:26px;height:26px;border-radius:7px;background:var(--glass);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    font-size:14px;line-height:26px;text-align:center;opacity:.85;cursor:help}
+  #help:hover{opacity:1}
+  #help .panel{display:none;position:absolute;top:30px;left:0;width:210px;
+    background:var(--glass);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    border-radius:8px;padding:3px 7px;font-size:12px;line-height:1.5;color:var(--fg);text-align:left}
+  #help:hover .panel,#help:focus-within .panel{display:block}
+
+  header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-top:4px}
+  .row{display:flex;align-items:center;gap:3px;overflow-x:auto;scrollbar-width:none}
+  .row::-webkit-scrollbar{display:none}
+  #recent{padding:2px 0 2px 32px;min-height:34px}        /* 左留 ❓ 的位置 */
+  #recent:empty::before{content:"🕘";opacity:.35;font-size:20px}
+  nav{padding:3px 0}
+  .tab{flex:0 0 auto;font-size:20px;line-height:1;padding:3px;border-radius:7px;
+    opacity:.55;cursor:pointer}
+  .tab:hover{opacity:1}
+  .tab[aria-selected="true"]{opacity:1;box-shadow:inset 0 -2px 0 var(--state)}
+  .tab:focus-visible{outline:2px solid var(--state);outline-offset:1px}
+
+  main{flex:1 0 auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:2px;padding-top:3px}
+  .em{font-size:26px;line-height:1;aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+    border-radius:8px;cursor:pointer;opacity:.9;padding:0}
+  .em:hover{opacity:1;background:var(--field)}
+  .em:focus-visible{outline:2px solid var(--state);outline-offset:1px}
+  .em.copied{box-shadow:inset 0 0 0 2px var(--state)}
+  #recent .em{font-size:23px;opacity:.95}
+</style>
+
+<div id="help" tabindex="0">❓<div class="panel">全 emoji，點一下就複製。最近 20 個只記在這台裝置的瀏覽器，換裝置或清資料就沒了。</div></div>
+
+<header>
+  <div class="row emo" id="recent"></div>
+  <nav class="row emo" id="tabs" role="tablist" aria-label="分類"></nav>
+</header>
+
+<main>
+  <div class="grid emo" id="grid"></div>
+</main>
+
+<script>
+const CATS = [
+  { icon:"😀", name:"表情", emo:"😀😃😄😁😆😅🤣😂🙂🙃🫠😉😊😇🥰😍🤩😘😗😚😙🥲😋😛😜🤪😝🤑🤗🤭🫢🫣🤫🤔🫡🤐🤨😐😑😶🫥😶‍🌫️😏😒🙄😬😮‍💨🤥🫨😌😔😪🤤😴😷🤒🤕🤢🤮🤧🥵🥶🥴😵😵‍💫🤯🤠🥳🥸😎🤓🧐😕🫤😟🙁☹️😮😯😲😳🥺🥹😦😧😨😰😥😢😭😱😖😣😞😓😩😫🥱😤😡😠🤬😈👿💀☠️💩🤡👹👺👻👽👾🤖😺😸😹😻😼😽🙀😿😾🙈🙉🙊" },
+  { icon:"👋", name:"手勢與身體", emo:"👋🤚🖐️✋🖖🫱🫲🫳🫴🫷🫸👌🤌🤏✌️🤞🫰🤟🤘🤙👈👉👆🖕👇☝️🫵👍👎✊👊🤛🤜👏🙌🫶👐🤲🤝🙏✍️💅🤳💪🦾🦵🦿🦶👣👂🦻👃🧠🫀🫁🦷🦴👀👁️👅👄🫦💋🩸" },
+  { icon:"🧑", name:"人物", emo:"👶🧒👦👧🧑👱👨🧔🧔‍♂️🧔‍♀️👨‍🦰👨‍🦱👨‍🦳👨‍🦲👩👩‍🦰👩‍🦱👩‍🦳👩‍🦲🧓👴👵🙍🙎🙅🙆💁🙋🧏🙇🤦🤷🧑‍⚕️🧑‍🎓🧑‍🏫🧑‍⚖️🧑‍🌾🧑‍🍳🧑‍🔧🧑‍🏭🧑‍💼🧑‍🔬🧑‍💻🧑‍🎤🧑‍🎨🧑‍✈️🧑‍🚀🧑‍🚒👮🕵️💂🥷👷🫅🤴👸👳👲🧕🤵👰🤰🫄🫃👼🎅🤶🦸🦹🧙🧚🧛🧜🧝🧞🧟🧌💆💇🚶🧍🧎🏃💃🕺🕴️👯🧖🧗🤺🏇⛷️🏂🏌️🏄🚣🏊⛹️🏋️🚴🚵🤸🤼🤽🤾🤹🧘🛀🛌" },
+  { icon:"🐵", name:"動物與自然", emo:"🐵🐒🦍🦧🐶🐕🦮🐕‍🦺🐩🐺🦊🦝🐱🐈🐈‍⬛🦁🐯🐅🐆🐴🫎🫏🐎🦄🦓🦌🦬🐮🐂🐃🐄🐷🐖🐗🐽🐏🐑🐐🐪🐫🦙🦒🐘🦣🦏🦛🐭🐁🐀🐹🐰🐇🐿️🦫🦔🦇🐻🐻‍❄️🐨🐼🦥🦦🦨🦘🦡🐾🦃🐔🐓🐣🐤🐥🐦🐧🕊️🦅🦆🦢🦉🦤🪶🦩🦚🦜🐦‍⬛🐸🐊🐢🦎🐍🐲🐉🦕🦖🐳🐋🐬🦭🐟🐠🐡🦈🐙🐚🪸🪼🐌🦋🐛🐜🐝🪲🐞🦗🪳🕷️🕸️🦂🦟🪰🪱🦠💐🌸💮🪷🏵️🌹🥀🌺🌻🌼🌷🪻🌱🪴🌲🌳🌴🌵🌾🌿☘️🍀🍁🍂🍃🍄" },
+  { icon:"🍏", name:"食物與飲料", emo:"🍏🍎🍐🍊🍋🍌🍉🍇🍓🫐🍈🍒🍑🥭🍍🥥🥝🍅🍆🥑🥦🥬🥒🌶️🫑🌽🥕🫒🧄🧅🥔🍠🫘🥐🥯🍞🥖🥨🧀🥚🍳🧈🥞🧇🥓🥩🍗🍖🦴🌭🍔🍟🍕🫓🥪🥙🧆🌮🌯🫔🥗🥘🫕🥫🍝🍜🍲🍛🍣🍱🥟🦪🍤🍙🍚🍘🍥🥠🥮🍢🍡🍧🍨🍦🥧🧁🍰🎂🍮🍭🍬🍫🍿🍩🍪🌰🥜🫚🍯🥛🍼🫗☕🍵🧃🥤🧋🍶🍺🍻🥂🍷🥃🍸🍹🧉🍾🧊🥄🍴🍽️🥣🥡🥢🧂" },
+  { icon:"⚽", name:"活動", emo:"⚽🏀🏈⚾🥎🎾🏐🏉🥏🎱🪀🏓🏸🏒🏑🥍🏏🪃🥅⛳🪁🏹🎣🤿🥊🥋🎽🛹🛼🛷⛸️🥌🎿🏆🥇🥈🥉🏅🎖️🏵️🎗️🎫🎟️🎪🤹🎭🩰🎨🎬🎤🎧🎼🎹🥁🪘🎷🎺🪗🎸🪕🎻🪈🎲♟️🎯🎳🎮🎰🧩🎴🀄🎭" },
+  { icon:"🚗", name:"旅遊與地點", emo:"🚗🚕🚙🚌🚎🏎️🚓🚑🚒🚐🛻🚚🚛🚜🦯🦽🦼🛴🚲🛵🏍️🛺🚨🚔🚍🚘🚖🚡🚠🚟🚃🚋🚞🚝🚄🚅🚈🚂🚆🚇🚊🚉✈️🛫🛬🛩️💺🛰️🚀🛸🚁🛶⛵🚤🛥️🛳️⛴️🚢⚓🪝⛽🚧🚦🚥🚏🗺️🗿🗽🗼🏰🏯🏟️🎡🎢🎠⛲⛱️🏖️🏝️🏜️🌋⛰️🏔️🗻🏕️⛺🛖🏠🏡🏘️🏚️🏗️🏭🏢🏬🏣🏤🏥🏦🏨🏪🏫🏩💒🏛️⛪🕌🕍🛕🕋⛩️🛤️🛣️🗾🎑🏞️🌅🌄🌠🎇🎆🌇🌆🏙️🌃🌌🌉🌁" },
+  { icon:"💡", name:"物件", emo:"⌚📱📲💻⌨️🖥️🖨️🖱️🖲️🕹️🗜️💽💾💿📀📼📷📸📹🎥📽️🎞️📞☎️📟📠📺📻🎙️🎚️🎛️🧭⏱️⏲️⏰🕰️⌛⏳📡🔋🪫🔌💡🔦🕯️🪔🧯🛢️💸💵💴💶💷🪙💰💳🪪💎⚖️🪜🧰🪛🔧🔨⚒️🛠️⛏️🪚🔩⚙️🪤🧱⛓️🧲🔫💣🧨🪓🔪🗡️⚔️🛡️🚬⚰️🪦⚱️🏺🔮📿🧿🪬💈⚗️🔭🔬🕳️🩻🩹🩺💊💉🩸🧬🦠🧫🧪🌡️🧹🪠🧺🧻🚽🚰🚿🛁🛀🧼🪥🪒🧽🪣🧴🛎️🔑🗝️🚪🪑🛋️🛏️🛌🧸🪆🖼️🪞🪟🛍️🛒🎁🎈🎏🎀🪄🪅🎊🎉🎎🏮🎐🧧✉️📩📨📧💌📥📤📦🏷️🪧📪📫📬📭📮📯📜📃📄📑🧾📊📈📉🗒️🗓️📆📅🗑️📇🗃️🗳️🗄️📋📁📂🗂️🗞️📰📓📔📒📕📗📘📙📚📖🔖🧷🔗📎🖇️📐📏🧮📌📍✂️🖊️🖋️✒️🖌️🖍️📝✏️🔍🔎🔏🔐🔒🔓" },
+  { icon:"❤️", name:"符號", emo:"❤️🧡💛💚💙🩵💜🖤🩶🤍🤎💔❣️💕💞💓💗💖💘💝💟☮️✝️☪️🕉️☸️🪯✡️🔯🕎☯️☦️🛐⛎♈♉♊♋♌♍♎♏♐♑♒♓🆔⚛️🉑☢️☣️📴📳🈶🈚🈸🈺🈷️✴️🆚💮🉐㊙️㊗️🈴🈵🈹🈲🅰️🅱️🆎🆑🅾️🆘❌⭕🛑⛔📛🚫💯💢♨️🚷🚯🚳🚱🔞📵🚭❗❕❓❔‼️⁉️🔅🔆〽️⚠️🚸🔱⚜️🔰♻️✅🈯💹❇️✳️❎🌐💠Ⓜ️🌀💤🏧🚾♿🅿️🛗🈳🈂️🛂🛃🛄🛅🚹🚺🚼⚧️🚻🚮🎦📶🈁🔣ℹ️🔤🔡🔠🆖🆗🆙🆒🆕🆓0️⃣1️⃣2️⃣3️⃣4️⃣5️⃣6️⃣7️⃣8️⃣9️⃣🔟🔢#️⃣*️⃣⏏️▶️⏸️⏯️⏹️⏺️⏭️⏮️⏩⏪⏫⏬◀️🔼🔽➡️⬅️⬆️⬇️↗️↘️↙️↖️↕️↔️↪️↩️⤴️⤵️🔀🔁🔂🔄🔃🎵🎶➕➖➗✖️🟰♾️💲💱™️©️®️🔚🔙🔛🔝🔜〰️➰➿✔️☑️🔘🔴🟠🟡🟢🔵🟣🟤⚫⚪🟥🟧🟨🟩🟦🟪🟫⬛⬜◼️◻️◾◽▪️▫️🔶🔷🔸🔹🔺🔻🔲🔳" },
+  { icon:"🚩", name:"旗幟", emo:"🏁🚩🎌🏴🏳️🏳️‍🌈🏳️‍⚧️🏴‍☠️🇹🇼🇯🇵🇺🇸🇬🇧🇨🇳🇭🇰🇰🇷🇨🇦🇦🇺🇫🇷🇩🇪🇮🇹🇪🇸🇳🇱🇨🇭🇸🇪🇳🇴🇩🇰🇫🇮🇷🇺🇮🇳🇮🇩🇹🇭🇻🇳🇵🇭🇲🇾🇸🇬🇧🇷🇲🇽🇦🇷🇿🇦🇪🇬🇸🇦🇦🇪🇹🇷🇮🇪🇵🇹🇵🇱🇬🇷🇨🇿🇦🇹🇧🇪🇺🇦🇳🇿" },
+];
+const KEY = "emoji-recent-v1";
+const $ = s => document.querySelector(s);
+const tabsEl = $("#tabs"), gridEl = $("#grid"), recentEl = $("#recent");
+
+function loadRecent(){ try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch(e){ return []; } }
+function saveRecent(l){ try{ localStorage.setItem(KEY, JSON.stringify(l)); }catch(e){} }
+function pushRecent(emo){
+  let l = loadRecent().filter(e => e !== emo); l.unshift(emo); l = l.slice(0,20);
+  saveRecent(l); renderRecent();
+}
+
+const _c = document.createElement("canvas"); _c.width = _c.height = 24;
+const _ctx = _c.getContext("2d", { willReadFrequently:true });
+const _emf = '20px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+function draw(ch){ _ctx.clearRect(0,0,24,24); _ctx.textBaseline="top"; _ctx.font=_emf; _ctx.fillText(ch,0,0); return _c.toDataURL(); }
+const _base = draw("￿￿"), _blank = draw(" "), _cache = new Map();
+function supported(ch){
+  if(_cache.has(ch)) return _cache.get(ch);
+  let ok = true; try{ const d = draw(ch); ok = d !== _base && d !== _blank; }catch(e){ ok = true; }
+  _cache.set(ch, ok); return ok;
+}
+
+async function copy(emo, btn){
+  let ok = false;
+  try{ await navigator.clipboard.writeText(emo); ok = true; }
+  catch(e){
+    try{ const t = document.createElement("textarea"); t.value = emo; t.style.position="fixed"; t.style.opacity="0";
+      document.body.appendChild(t); t.focus(); t.select(); ok = document.execCommand("copy"); document.body.removeChild(t);
+    }catch(_){ ok = false; }
+  }
+  pushRecent(emo);
+  if(btn){ btn.classList.add("copied"); setTimeout(() => btn.classList.remove("copied"), 500); }
+}
+
+function splitEmoji(str){
+  if(typeof Intl !== "undefined" && Intl.Segmenter) return [...new Intl.Segmenter().segment(str)].map(s => s.segment);
+  return [...str];
+}
+function emBtn(emo, cls){
+  const b = document.createElement("button");
+  b.className = "em" + (cls ? " " + cls : ""); b.type = "button"; b.textContent = emo;
+  b.setAttribute("aria-label", "複製 " + emo); b.title = emo;
+  b.addEventListener("click", () => copy(emo, b));
+  return b;
+}
+function renderRecent(){
+  recentEl.innerHTML = "";
+  loadRecent().forEach(e => recentEl.appendChild(emBtn(e)));
+}
+function renderCat(i){
+  gridEl.innerHTML = "";
+  const frag = document.createDocumentFragment();
+  splitEmoji(CATS[i].emo).forEach(e => { if(supported(e)) frag.appendChild(emBtn(e)); });
+  gridEl.appendChild(frag);
+  [...tabsEl.children].forEach((t,idx) => t.setAttribute("aria-selected", idx===i ? "true" : "false"));
+}
+CATS.forEach((cat,i) => {
+  const b = document.createElement("button");
+  b.className = "tab"; b.type = "button"; b.setAttribute("role","tab"); b.setAttribute("aria-selected","false");
+  b.textContent = cat.icon; b.setAttribute("aria-label", cat.name); b.title = cat.name;
+  b.addEventListener("click", () => renderCat(i));
+  tabsEl.appendChild(b);
+});
+renderRecent();
+renderCat(0);
+</script>

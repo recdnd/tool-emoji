@@ -1,0 +1,10 @@
+# static baseline (machine/specs/06)
+.DS_Store
+._*
+Thumbs.db
+*.swp
+.env
+.env.*
+node_modules/
+.claude/
+_check.js
